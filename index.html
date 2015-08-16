@@ -75,7 +75,9 @@
 				offContext = offscreen.getContext("2d");
 				context = canvas.getContext("2d");
 				image = new Image();
-				image.src = "test-image.jpg";
+				image.crossOrigin = "Anonymous";
+				image.src = "http://i.imgur.com/yWWa2be.png";
+
 				imagePos.x = imagePos.y = 0;
 
 				image.addEventListener("load", function () {
@@ -177,6 +179,9 @@
 
 		    
 		    offContext.restore();
+
+		    var data = offscreen.toDataURL("image/jpeg", 1.0);
+		    console.log("Out data: ", data);
 			}
 
 			function zoom (which) {
