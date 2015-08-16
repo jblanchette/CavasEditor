@@ -62,8 +62,8 @@
 				y: (canvasHeight / 2)
 			};
 
-			var canvasWidth = 600;
-			var canvasHeight = 600;
+			var canvasWidth = 400;
+			var canvasHeight = 400;
 
 			var radius = 75;
 			var circleX = (canvasWidth / 2);
@@ -161,8 +161,8 @@
 				var cDiameter = finalSize;
 				var cRadius = cDiameter / 2;
 
-				var cropX = (circleX - (circleX - (imagePos.x - cDiameter - cRadius)));
-				var cropY = (circleY - (circleY - (imagePos.y - cDiameter - cRadius)));
+				var cropX = -(circleX - imagePos.x) + cRadius;
+				var cropY = -(circleY - imagePos.y) + cRadius;
 
 				console.log("pos: ", cropX, cropY);
 				offContext.clearRect(0, 0, finalSize, finalSize);
@@ -221,8 +221,8 @@
 			}
 
 			#main {
-				width: 600px;
-				height: 600px;
+				width: 400px;
+				height: 400px;
 				border: 1px solid #333;
 				cursor: pointer;
 			}
@@ -254,7 +254,7 @@
 	</head>
 	<body>
 		<div id="wrapper">
-			<canvas id="main" width="600" height="600"></canvas>
+			<canvas id="main" width="400" height="400"></canvas>
 			<canvas id="c-offscreen" width="150" height="150"></canvas>
 			<div id="menu">
 				<button onclick="zoom('in')">Zoom In</button>
