@@ -8,8 +8,8 @@
 				y: 0,
 
 				checkHit: function (x, y) {
-					return (x > imagePos.x && x < imagePos.x + image.width &&
-						y > imagePos.y && y < imagePos.y + image.height);
+					return (x > imagePos.x && x < imagePos.x + (image.width / zoomLevel) &&
+						y > imagePos.y && y < imagePos.y + (image.height / zoomLevel));
 				},
 				mouseMoveHandler: function (e) {
 					if (dragger.on) {
@@ -42,6 +42,9 @@
 					dragger.on = false;
 				}
 			};
+
+			var zoomLevel = 1;
+			var zoomDelta = 0.1;
 
 			var ready = false;
 			var canvas;
@@ -86,7 +89,7 @@
 			};
 
 			function clipCoord (which, val) {
-				var imageVal = which === "x" ? image.width : image.height;
+				var imageVal = which === "x" ? (image.width / zoomLevel) : (image.height / zoomLevel);
 
 				// note: circleX should === circleY
 				// if the left side of the pick
@@ -114,7 +117,7 @@
 				if (ready) {
 					context.clearRect(0, 0, canvasWidth, canvasHeight);
 					
-					context.drawImage(image, imagePos.x, imagePos.y, image.width, image.height);
+					context.drawImage(image, imagePos.x, imagePos.y, image.width / zoomLevel, image.height / zoomLevel);
 
 					context.save();
 			    context.globalCompositeOperation = 'destination-in';
@@ -123,14 +126,18 @@
 			    context.fill();
 			    context.restore();
 
-			    context.strokeRect(imagePos.x, imagePos.y, image.width, image.height);
+			    context.strokeRect(imagePos.x, imagePos.y, image.width / zoomLevel, image.height / zoomLevel);
 				}
 			}
 
-			function move(which) {
-				if (which === "left") {
-
+			function zoom (which) {
+				if (which === "in") {
+					zoomLevel -= zoomDelta;
+				} else {
+					zoomLevel += zoomDelta;
 				}
+
+				drawLoop(true);
 			}
 		</script> 
 
