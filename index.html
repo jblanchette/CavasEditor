@@ -1,2 +1,184 @@
 <html>
+	<head>
+		<script type="text/javascript">
+
+			var dragger = {
+				on: false,
+				x: 0,
+				y: 0,
+
+				checkHit: function (x, y) {
+					return (x > imagePos.x && x < imagePos.x + image.width &&
+						y > imagePos.y && y < imagePos.y + image.height);
+				},
+				mouseMoveHandler: function (e) {
+					if (dragger.on) {
+						var cursorPos = getCursorPosition(e);
+
+						imagePos.x = clipCoord("x", (imagePos.x + (cursorPos.x - dragger.x)));
+						imagePos.y = clipCoord("y", (imagePos.y + (cursorPos.y - dragger.y)));
+
+						dragger.x = cursorPos.x;
+						dragger.y = cursorPos.y;
+
+						drawLoop(true);
+					}
+				},
+				mouseDownHandler: function (e) {
+					console.log("E: ", e);
+					console.log("Image: ", image.height, image.width);
+
+					var cursorPos = getCursorPosition(e);
+
+					if (!dragger.on && dragger.checkHit(cursorPos.x, cursorPos.y)) {
+						console.log("Dragging");
+						dragger.on = true;
+						dragger.x = cursorPos.x;
+						dragger.y = cursorPos.y;
+					}
+				},
+				mouseUpHandler: function (e) {
+					console.log("Not dragging");
+					dragger.on = false;
+				}
+			};
+
+			var ready = false;
+			var canvas;
+			var context;
+			var image;
+			var imagePos = {
+				x: (canvasWidth / 2),
+				y: (canvasHeight / 2)
+			};
+
+			var canvasWidth = 600;
+			var canvasHeight = 600;
+
+			var radius = 75;
+			var circleX = (canvasWidth / 2);
+			var circleY = (canvasHeight / 2);
+
+			window.onload = function () {
+				canvas = document.getElementById("main");
+				context = canvas.getContext("2d");
+				image = new Image();
+				image.src = "test-image.jpg";
+				imagePos.x = imagePos.y = 0;
+
+				image.addEventListener("load", function () {
+
+					var circleMidpoint = (circleX + radius);
+					var hWidth = (image.width / 2);
+					var hHeight = (image.height / 2);
+
+					console.log("Mid: ", circleMidpoint);
+					console.log("W: ", hWidth, "H: ", hHeight);
+					imagePos.x = clipCoord("x", (circleMidpoint - hWidth - radius));
+					imagePos.y = clipCoord("y", (circleMidpoint - hHeight - radius));
+
+					drawLoop(true);
+				});
+
+				canvas.addEventListener("mousedown", dragger.mouseDownHandler.bind(this));
+				canvas.addEventListener("mouseup", dragger.mouseUpHandler.bind(this));
+				canvas.addEventListener("mousemove", dragger.mouseMoveHandler.bind(this));
+			};
+
+			function clipCoord (which, val) {
+				var imageVal = which === "x" ? image.width : image.height;
+
+				// note: circleX should === circleY
+				// if the left side of the pick
+				if (val >= circleX - radius) {
+					return circleX - radius;
+				} else if ((val + imageVal) <= (circleX + radius)) {
+					return (circleX + radius - imageVal);
+				} else {
+					return val;
+				}
+			};
+
+			function getCursorPosition(event) {
+    		var rect = canvas.getBoundingClientRect();
+    		return {
+    			x: event.clientX - rect.left,
+    			y: event.clientY - rect.top
+    		};
+ 			}		
+
+
+			function drawLoop (readyState) {
+				ready = readyState;
+
+				if (ready) {
+					context.clearRect(0, 0, canvasWidth, canvasHeight);
+					
+					context.drawImage(image, imagePos.x, imagePos.y, image.width, image.height);
+
+					context.save();
+			    context.globalCompositeOperation = 'destination-in';
+			    context.beginPath();
+			    context.arc(circleX, circleY, radius, 0, 2 * Math.PI, false);
+			    context.fill();
+			    context.restore();
+
+			    context.strokeRect(imagePos.x, imagePos.y, image.width, image.height);
+				}
+			}
+
+			function move(which) {
+				if (which === "left") {
+
+				}
+			}
+		</script> 
+
+		<style>
+			html, body {
+				padding: 0;
+				margin: 0;
+			}
+
+			#wrapper {
+				margin: 0 auto;
+				padding: 2rem;
+				width: 800px;
+				height: 800px;
+			}
+
+			#main {
+				width: 600px;
+				height: 600px;
+				border: 1px solid #333;
+				cursor: pointer;
+			}
+
+			#menu {
+				margin: 0 auto;
+				margin-left: -12rem;
+				margin-top: 4rem;
+				padding: 1rem;
+				border: 1px solid #333;
+				text-align: center;
+			}
+
+			button {
+				display: inline-block;
+				height: 40px;
+				width: 80px;
+				margin-right: 10px;
+			}
+
+		</style>
+	</head>
+	<body>
+		<div id="wrapper">
+			<canvas id="main" width="600" height="600"></canvas>
+			<div id="menu">
+				<button onclick="zoom('in')">Zoom In</button>
+				<button onclick="zoom('out')">Zoom Out</button>
+			</div>
+		</div>
+	</body>
 </html>
