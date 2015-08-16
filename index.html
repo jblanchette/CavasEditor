@@ -1,11 +1,13 @@
 <html>
 	<head>
 		<script type="text/javascript">
+			var d = false;
 
 			var dragger = {
 				on: false,
 				x: 0,
 				y: 0,
+				dragged: false,
 
 				checkHit: function (x, y) {
 					return (x > imagePos.x && x < imagePos.x + (image.width / zoomLevel) &&
@@ -21,25 +23,27 @@
 						dragger.x = cursorPos.x;
 						dragger.y = cursorPos.y;
 
-						drawLoop(true);
+						renderScene();
 					}
 				},
 				mouseDownHandler: function (e) {
-					console.log("E: ", e);
-					console.log("Image: ", image.height, image.width);
-
 					var cursorPos = getCursorPosition(e);
 
 					if (!dragger.on && dragger.checkHit(cursorPos.x, cursorPos.y)) {
 						console.log("Dragging");
 						dragger.on = true;
+						dragger.dragged = true;
 						dragger.x = cursorPos.x;
 						dragger.y = cursorPos.y;
 					}
 				},
-				mouseUpHandler: function (e) {
-					console.log("Not dragging");
+				endDrag: function (e) {
 					dragger.on = false;
+				},
+				mouseWheelHandler: function (e) {
+					var delta = Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
+					var which = delta === 1 ? "in" : "out";
+					zoom(which);
 				}
 			};
 
@@ -48,6 +52,9 @@
 
 			var ready = false;
 			var canvas;
+			var offscreen;
+			var offContext;
+
 			var context;
 			var image;
 			var imagePos = {
@@ -64,6 +71,8 @@
 
 			window.onload = function () {
 				canvas = document.getElementById("main");
+				offscreen = document.getElementById("c-offscreen");
+				offContext = offscreen.getContext("2d");
 				context = canvas.getContext("2d");
 				image = new Image();
 				image.src = "test-image.jpg";
@@ -71,22 +80,35 @@
 
 				image.addEventListener("load", function () {
 
-					var circleMidpoint = (circleX + radius);
-					var hWidth = (image.width / 2);
-					var hHeight = (image.height / 2);
+					var centerPos = getCenterAlignment();
+					imagePos.x = centerPos.x;
+					imagePos.y = centerPos.y;
 
-					console.log("Mid: ", circleMidpoint);
-					console.log("W: ", hWidth, "H: ", hHeight);
-					imagePos.x = clipCoord("x", (circleMidpoint - hWidth - radius));
-					imagePos.y = clipCoord("y", (circleMidpoint - hHeight - radius));
-
-					drawLoop(true);
+					renderScene();
 				});
 
 				canvas.addEventListener("mousedown", dragger.mouseDownHandler.bind(this));
-				canvas.addEventListener("mouseup", dragger.mouseUpHandler.bind(this));
 				canvas.addEventListener("mousemove", dragger.mouseMoveHandler.bind(this));
+				canvas.addEventListener("mousewheel", dragger.mouseWheelHandler.bind(this), false);
+
+				canvas.addEventListener("mouseup", dragger.endDrag.bind(this));
+				canvas.addEventListener("mouseleave", dragger.endDrag.bind(this));
+				document.body.addEventListener("mouseup", dragger.endDrag.bind(this));
+				document.body.addEventListener("mouseleave", dragger.endDrag.bind(this));
+				// Firefox
+				canvas.addEventListener("DOMMouseScroll", dragger.mouseWheelHandler, false);
 			};
+
+			function getCenterAlignment() {
+				var circleMidpoint = (circleX + radius);
+				var hWidth = ((image.width / zoomLevel) / 2);
+				var hHeight = ((image.height / zoomLevel) / 2);
+
+				return {
+					x: clipCoord("x", (circleMidpoint - hWidth - radius)),
+					y: clipCoord("y", (circleMidpoint - hHeight - radius))
+				};
+			}
 
 			function clipCoord (which, val) {
 				var imageVal = which === "x" ? (image.width / zoomLevel) : (image.height / zoomLevel);
@@ -111,33 +133,72 @@
  			}		
 
 
-			function drawLoop (readyState) {
-				ready = readyState;
+			function renderScene () {
+				context.clearRect(0, 0, canvasWidth, canvasHeight);
+				
+				context.globalAlpha = 1;
+				context.drawImage(image, imagePos.x, imagePos.y, image.width / zoomLevel, image.height / zoomLevel);
 
-				if (ready) {
-					context.clearRect(0, 0, canvasWidth, canvasHeight);
+				context.save();
+		    context.globalCompositeOperation = 'destination-in';
+		    context.beginPath();
+		    context.arc(circleX, circleY, radius, 0, 2 * Math.PI, false);
+		    context.fill();
+
+		    
+		    context.restore();
+
+		    context.globalAlpha = 0.2;
+		    context.drawImage(image, imagePos.x, imagePos.y, image.width / zoomLevel, image.height / zoomLevel);
+
+		    context.strokeRect(imagePos.x, imagePos.y, image.width / zoomLevel, image.height / zoomLevel);
+			}
+
+			function cropPicture () {
+				var finalSize = 150;
+				var cDiameter = finalSize;
+				var cRadius = cDiameter / 2;
+
+				var cropX = (circleX - (circleX - (imagePos.x - cDiameter - cRadius)));
+				var cropY = (circleY - (circleY - (imagePos.y - cDiameter - cRadius)));
+
+				console.log("pos: ", cropX, cropY);
+				offContext.clearRect(0, 0, finalSize, finalSize);
 					
-					context.drawImage(image, imagePos.x, imagePos.y, image.width / zoomLevel, image.height / zoomLevel);
+				offContext.globalAlpha = 1;
+				offContext.drawImage(image, cropX, cropY,
+					image.width / zoomLevel, image.height / zoomLevel);
 
-					context.save();
-			    context.globalCompositeOperation = 'destination-in';
-			    context.beginPath();
-			    context.arc(circleX, circleY, radius, 0, 2 * Math.PI, false);
-			    context.fill();
-			    context.restore();
+				offContext.save();
+		    offContext.globalCompositeOperation = 'destination-in';
+		    offContext.beginPath();
+		    offContext.arc(finalSize / 2, finalSize / 2, cRadius, 0, 2 * Math.PI, false);
+		    offContext.fill();
 
-			    context.strokeRect(imagePos.x, imagePos.y, image.width / zoomLevel, image.height / zoomLevel);
-				}
+		    
+		    offContext.restore();
 			}
 
 			function zoom (which) {
+				var oldZoom = zoomLevel;
+
 				if (which === "in") {
 					zoomLevel -= zoomDelta;
 				} else {
 					zoomLevel += zoomDelta;
 				}
 
-				drawLoop(true);
+				if ((image.width / zoomLevel) < (radius * 2) || ((image.height / zoomLevel) < (radius * 2))) {
+					zoomLevel = oldZoom;
+					return;
+				}
+
+				// center align only if they haven't moved it
+				if (!dragger.dragged) {
+					imagePos = getCenterAlignment();	
+				}
+			
+				renderScene();
 			}
 		</script> 
 
@@ -151,7 +212,7 @@
 				margin: 0 auto;
 				padding: 2rem;
 				width: 800px;
-				height: 800px;
+				height: 700px;
 			}
 
 			#main {
@@ -170,6 +231,13 @@
 				text-align: center;
 			}
 
+			#c-offscreen {
+				display: block;
+				border: 1px solid #0000FF;
+				height: 150px;
+				width: 150px;
+			}
+
 			button {
 				display: inline-block;
 				height: 40px;
@@ -182,9 +250,12 @@
 	<body>
 		<div id="wrapper">
 			<canvas id="main" width="600" height="600"></canvas>
+			<canvas id="c-offscreen" width="150" height="150"></canvas>
 			<div id="menu">
 				<button onclick="zoom('in')">Zoom In</button>
-				<button onclick="zoom('out')">Zoom Out</button>
+				<button onclick="zoom('out')">Zoom Out</button> 
+				<br> <br>
+				<button onclick="cropPicture()">Crop Picture</button>
 			</div>
 		</div>
 	</body>
