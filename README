@@ -1,0 +1,5 @@
+An HTML5 <canvas> based image editor, in the WHOOP style.
+
+To use, clone the repo and drag the `index.html` file into your browser.
+
+**Tested on Chrome**
